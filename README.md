@@ -1,1 +1,71 @@
-# MyWebFPSGame
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mobile 3D FPS</title>
+<style>
+body{margin:0;overflow:hidden}canvas{width:100vw;height:100vh;display:block}#ui{position:absolute;width:100%;height:100%;pointer-events:none}#ui button{pointer-events:all;position:absolute;font-size:18px;padding:12px;opacity:0.7}#fireBtn{right:20px;bottom:50px}#jumpBtn{left:20px;bottom:50px}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="ui">
+  <button id="jumpBtn">Jump</button>
+  <button id="fireBtn">Fire</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/controls/PointerLockControls.js"></script>
+<script>
+// 씬/카메라/렌더러
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xa0a0a0);
+const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,0.1,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,canvas:document.getElementById("gameCanvas")});
+renderer.setSize(window.innerWidth,window.innerHeight);
+const ambient=new THREE.AmbientLight(0xffffff,0.6);scene.add(ambient);
+const dir=new THREE.DirectionalLight(0xffffff,0.8);dir.position.set(5,10,7.5);scene.add(dir);
+// 바닥
+const floor=new THREE.Mesh(new THREE.BoxGeometry(50,1,50),new THREE.MeshStandardMaterial({color:0x555555}));
+floor.position.y=-0.5;scene.add(floor);
+// 로더
+const loader=new THREE.GLTFLoader();
+// 모델 URL
+const models={
+  weapon:"https://poly.pizza/m/weapon",
+  enemy:"https://poly.pizza/m/enemy",
+  health:"https://poly.pizza/m/health_pack",
+  ammo:"https://poly.pizza/m/ammo_pack",
+  wall:"https://poly.pizza/m/wall",
+  box:"https://poly.pizza/m/box"
+};
+// 플레이어 무기
+loader.load(models.weapon,w=>{w.scene.scale.set(0.5,0.5,0.5);camera.add(w.scene);});
+// 적
+let enemies=[];
+function spawnEnemy(x,z){loader.load(models.enemy,g=>{const e=g.scene;e.position.set(x,0,z);scene.add(e);enemies.push(e);});}
+spawnEnemy(5,-10);spawnEnemy(-5,-15);
+// 아이템
+let items=[];
+function spawnItem(path,x,z){loader.load(path,g=>{const item=g.scene;item.position.set(x,0.5,z);scene.add(item);items.push(item);});}
+spawnItem(models.health,3,-5);spawnItem(models.ammo,-3,-7);
+// 장애물
+loader.load(models.wall,w=>{w.position.set(0,0,-5);scene.add(w);});
+loader.load(models.box,b=>{b.position.set(2,0,-3);scene.add(b);});
+// 컨트롤
+const controls=new THREE.PointerLockControls(camera,renderer.domElement);
+document.body.addEventListener("click",()=>controls.lock());
+// 이동
+let move={forward:false,back:false,left:false,right:false};
+document.addEventListener("keydown",e=>{if(e.code==="KeyW")move.forward=true;if(e.code==="KeyS")move.back=true;if(e.code==="KeyA")move.left=true;if(e.code==="KeyD")move.right=true;});
+document.addEventListener("keyup",e=>{if(e.code==="KeyW")move.forward=false;if(e.code==="KeyS")move.back=false;if(e.code==="KeyA")move.left=false;if(e.code==="KeyD")move.right=false;});
+// 버튼
+document.getElementById("fireBtn").addEventListener("touchstart",()=>console.log("FIRE!"));
+let velocityY=0,canJump=true;
+document.getElementById("jumpBtn").addEventListener("touchstart",()=>{if(canJump){velocityY=0.2;canJump=false;}});
+// 루프
+function animate(){requestAnimationFrame(animate);const speed=0.05;if(move.forward)controls.moveForward(speed);if(move.back)controls.moveForward(-speed);if(move.left)controls.moveRight(-speed);if(move.right)controls.moveRight(speed);velocityY-=0.01;camera.position.y+=velocityY;if(camera.position.y<1.5){camera.position.y=1.5;velocityY=0;canJump=true;}renderer.render(scene,camera);}
+animate();
+</script>
+</body>
+</html># MyWebFPSGame
